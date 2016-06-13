@@ -1,0 +1,266 @@
+<!DOCTYPE html lang="en-US">
+<head>
+<script type="text/javascript" src="js/jquery/jquery.min.js"></script> 
+<script type="text/javascript" src="js/jsonTable/jquery.tablesorter.js"></script> 
+<script type="text/javascript" src="js/jsonTable/jquery.tablesorter.pager.js"></script> 
+<script type="text/javascript" src="js/datepickr.min.js"></script> 
+<script type="text/javascript" src="js/iptools.js"></script> 
+<script src="js/ie_helper.js"></script>
+<script src="js/d3/d3.min.js"></script>
+<script src="js/bootstrap/bootstrap.min.js"></script>
+<script src="js/bootstrap/bootstrap-table.js"></script>
+<link rel="stylesheet" href="css/tablesorter.css" />
+<link rel="stylesheet" href="css/bootstrap.min.css">
+<link rel="stylesheet" href="css/bootstrap-table.css">
+<link rel="stylesheet" href="css/trickler.css">
+<style>
+.trickler {
+ padding-left: 10px;
+ border-collapse: separate;
+}
+.querytype { display: block;}
+.searchme { display: block;} 
+.table-striped {
+    max-width: 100%;
+    table-layout: fixed;
+    word-wrap: break-word;
+}
+.table-striped tr td:last-child{
+    width:100%;
+    white-space:nowrap;
+}
+</style>
+<script>
+function add_conditions() {
+y=$("#searcher tr").html()
+$("#searcher").append("<tr>"+y+"</tr>")
+}
+var helpers={'nsearch': "DNS request e.g., google.com",'ipsearch':"IP or subnet 193.11.12.0/24",'typesearch':"Query type e.g., CNAME or A",'vsearch':"DNS response vaue e.g., mx.google.com or 123.11.19.1"}
+function buildselector(w) {
+   var m=$(w).parent().next().find('input')
+   var v=w.options[w.selectedIndex].value
+   m.attr('placeholder',helpers[v] || "")
+}
+</script>
+
+</head>
+<body>
+<form>
+<table class="trickler">
+<caption>Trickler DNS search criterea</caption>
+<tr><td colspan="2">
+Search for  <a href="#" onclick="add_conditions()">Add</a>
+<!-- //https://lab162.teal.cert.org/Rest/DBCon?jndisource=jdbc/trickler&out_type=json&
+querytype=trickler.dns.multisearch&
+vsearch=*&
+nsearch=*&
+dstart=20000101000000.00&
+dend=20150924000000.00&
+istart=3&
+iend=5&
+ipstart=0&
+ipend=0&
+typesearch=* -->
+<br />
+<table id="searcher"><tr><td>
+<select class="querytype" onchange="buildselector(this)">
+<!-- 
+if(this.selectedIndex < 1) { document.getElementById('searchme').value='';document.getElementById('searchme').onfocus=function(){this.blur();}} else { document.getElementById('searchme').value=''; document.getElementById('searchme').onfocus=null}
+-->
+<option value='nsearch'>Name Search</option>
+<option value='ipsearch'>IP Search</option>
+<option value='typesearch'>Query type search</option>
+<option value='vsearch'>Value Search</option>
+</select>
+</td>
+<td>
+<input class="searchme" size="45" placeholder="DNS request e.g., google.com" value="" />
+</td>
+</tr></table></td></tr>
+<tr><td>
+                Start:</td><td>
+                <input id="start" size="20" value="1 January 2000" /></td></tr>
+                <tr><td>
+                End:</td><td>
+                <input id="end" size="20" />
+
+</td></tr>
+<tr><td colspan='2'>
+<input type='button' name='submit' value='Search' onclick='psearch(0)' />
+<br />
+Total number of rows: <input type='text' id='Next' value='0' onfocus='this.blur()' size='10'/>
+(Max rows returned per page is 1000)
+<br />
+<div id='multipage' style='display:none;'>
+Page Navigation: <a href='#' onclick='psearch(0);' id="FirstPage">First</a>
+<a href='#' onclick='psearch(fstart-maxreturn);' id="PrevPage">Prev</a>
+<input type='text' value='' size='20' onfocus='this.blur()' id='viewing' />
+<a href='#' onclick='psearch(fstart+maxreturn);' id="NextPage">Next</a>
+</div>
+
+<!--
+Show in Geo Map:<select id="changecolumn" name="changecolumn" onchange="defaultcolumn=this.options[this.selectedIndex].value">
+<option value="IP4_STARTS">Starting IPv4 Address</option>
+<option value="IP4_ENDS">Ending IPv4 Address</option>
+</select>
+<input type='button' name='heatmap' value='Map Plot' onclick='openmap(defaultcolumn,"Marker")' />
+<input type='button' name='heatmap' value='Heatmap Plot' onclick='openmap(defaultcolumn,"HeatMap")' />
+-->
+</td></tr>
+</table>
+</form>
+<div id="loading"></div>
+<div id="graphchart" style="display: none">
+<div id="notstats" style="display:inline">
+Graph data by <input type="radio" name="bytepacket" value="byte" onclick="$('#graphpack').hide(); $('#graphbyte').show();" checked/>Bytes
+<input type="radio" name="bytepacket" value="packets" onclick="$('#graphbyte').hide(); $('#graphpack').show();"/>Packets
+<input type="radio" name="bytepacket" value="both" onclick="$('#graphbyte').show(); $('#graphpack').show();"/>Both
+</div>
+<div id="graphbyte" style="display: none"></div>
+<div id="graphpack" style="display: none"></div>
+</div>
+<table id="table-focus"></table>
+<table id="table-javascript"></table>
+
+<div style='display:inline;font-size: 0.7em;' id='urlhelp'></div>
+
+<script>
+var columnx;
+function uTable(url) {
+	$("#myTable tr").remove()
+	 $.getJSON(url, function(flat) { 
+		 if(flat['error']) {
+			 alert("Query Error: "+flat.error)
+			 $("#loading").html("")
+			 return;	 
+			 
+		 }
+                mpaginate(fstart+flat.gdata.length + 1);
+		 currentdata=flat.gdata
+		 if(flat.gdata.length < 1) {
+			 alert('No data returned')
+			 $("#loading").html("")
+			 return;
+		 }
+		 columnx=[{field: 'state',checkbox: true }, {field: 'RN', visible: false},{field: 'IDROW', visible: false}]
+		 var def={RN:1,IDROW:1}
+		 for (var k in flat.gdata[0]) {
+				if(def[k] === undefined)
+				 columnx.push({field: k,title: k, sortable:true, visible: true})
+		 }
+
+         $('#table-javascript').bootstrapTable({
+             method: 'get',
+	        data: flat.gdata,
+             cache: false,
+             striped: true,
+             pagination: true,
+             pageSize: 50,
+             pageList: [10, 25, 50, 100, 200],
+             search: true,
+             showColumns: true,
+             showRefresh: true,
+             minimumCountColumns: 2,
+             clickToSelect: true,
+             columns: columnx,
+         });
+			$('#table-javascript').bootstrapTable('load',flat.gdata)
+		 	$("#loading").html("")
+		 })	
+}
+
+//flat={"gdata":[{"ip":"204.11.35.97","region_code":"MI","metrocode":"505","areacode":"248","postal_code":"48083","city":"Troy","latitude":"42.556","longitude":"-83.1178","country_code":"US"},{"ip":"204.11.35.99","region_code":"MI","metrocode":"508","areacode":"248","postal_code":"48083","city":"Troy","latitude":"42.556","longitude":"-83.1178","country_code":"UK"}]}
+url="DBCon?jndisource=jdbc/geoip&querytype=geoipsearch&ip=204.11.35.97&ip=208.86.299.31&out_type=jquery&78.187.157.135&ip=74.143.197.54&ip=27.130.130.40&ip=75.192.147.200&ip=68.34.146.13&ip=76.5.190.5&ip=173.17.63.90&ip=101.99.29.134&ip=65.32.49.130&ip=86.183.188.24&ip=208.97.34.1&ip=98.213.225.108&ip=175.214.49.115&ip=2.184.47.128&ip=196.216.57.2&ip=69.204.205.242&ip=86.163.84.42&ip=122.172.249.1&ip=71.75.238.29&ip=122.176.46.150&ip=98.27.246.227&ip=97.95.94.125&ip=70.239.177.103&ip=207.63.57.114&ip=50.158.118.165&ip=197.33.68.70&ip=176.44.190.2&ip=69.127.185.147&ip=68.204.60.44&ip=24.28.81.222&ip=14.96.156.210&ip=70.115.176.19&ip=77.69.174.246&callback=?"
+var baseurl="DBCon?jndisource=jdbc/trickler&out_type=jquery&callback=?&querytype=trickler.dns.multisearch"
+//		uTable(url);
+new datepickr('start',{'dateFormat': 'd F Y'});
+fend=new datepickr('end',{'dateFormat': 'd F Y'});
+var now=new Date();
+$('#end').val(now.getDate()+' '+fend.currentMonth.innerHTML)
+var currentdata=[];
+var maxreturn=1000;
+var fstart=0
+function psearch(istart) {
+        if(istart < 0) return;
+        var iend=istart+maxreturn;
+	var start=new Date($('#start').val())
+	var end=new Date($('#end').val())
+	var mstart=start.getFullYear()*10000+(start.getMonth()+1)*100+start.getDate()
+	var mend=end.getFullYear()*10000+(end.getMonth()+1)*100+end.getDate()
+	// Escape the values in the full text search string and also allow for wild cards to be changed to SQL language.
+	allopts=$(".querytype")
+        var mopts='&dstart='+mstart+'000000.00'+'&dend='+mend+'000000.00'
+        var checkopts={}
+	for (var j=0;j<allopts.length;j++) {
+	     var w=allopts[j]
+             var m=$(w).parent().next().find('input')
+	     var column=$(w).val()
+             var value=$(m).val()
+	     if(column == "") continue; // Datesearch nothing to add here
+	     if(value == "") continue; // value is nothing so ignore it.
+	     if(column == 'ipsearch') { 
+			column="ipstart"; 
+			var ips=subnet2range(value);
+                        mopts+="&ipstart="+escape(ips[0])+"&ipend="+escape(ips[1])
+	     } else {
+		 mopts+="&"+escape(column)+"="+escape(value)
+	     }
+	     checkopts[column] == 1
+	}
+	for (var col in helpers) {
+		if(checkopts[col] != 1) 
+                   mopts+="&"+col+"=*" // make wildcard search
+        }
+	if (checkopts['ipstart'] != 1) 
+		   mopts+="&ipstart=0&ipend=0"
+ 	url= baseurl+mopts+"&istart="+istart+"&iend="+iend
+//'querytype='+$('#querytype').val()+'&ipblocksize='+$('#ipblocksize').val()+'&'+$('#querytype').val()+'='+spvalue+'&start='+mstart+'&end='+mend+'&goodguy='+$('#goodguy').val()
+	//console.log(url)
+	$("#loading").html("<img src='loading1.gif' width='20'/>")
+	var loc = location.protocol+"//"+location.host+'/'+url
+	loc= location.href.substr(0,location.href.lastIndexOf('/')+1)+url
+	var locxml = loc.replace("=jquery","=xml");
+	$("#urlhelp").html("Rest URL is <a href='"+loc+"' target='_new'>JSON</a> : "+loc+"<br /> and <a href='"+locxml+"' target='_new'>XML</a> : "+locxml);
+	fstart=istart;
+	uTable(url);
+}
+function mpaginate(length) {
+    console.log("Mpaginate length is "+length)
+    var nlength = maxreturn + fstart;
+    if (length >= maxreturn) {
+        $('#Next').val(nlength + '+')
+        $('#multipage').show()
+        $('#viewing').val('Viewing ' + fstart + '-' + nlength);
+        $('#NextPage').show()
+    }
+    else {
+        $('#Next').val(length);
+        $('#NextPage').hide()
+    }
+    if (fstart < 1) {
+        $("#PrevPage").hide()
+        $("#FirstPage").hide()
+    } else {
+         $("#PrevPage").show()
+        $("#FirstPage").show()
+    }
+
+}
+
+var ipArray=[];
+var markertype='Marker'
+var defaultcolumn='IP4_STARTS'
+function openmap(column,type) {
+	ipArray=[]
+	if(currentdata.length < 1) return;
+	for(var i=0;i<currentdata.length;i++) {
+		if(currentdata[i][column] && validip(currentdata[i][column]))
+		ipArray.push(currentdata[i][column])
+	}
+	//w2.addIPArray(ipArray,'HeatMap');
+	//ipArray=["208.86.233.11","209.23.11.19","133.4.11.1"]
+	markertype=type
+	var w2=window.open("geoip.html");
+}
+</script>
+</body>

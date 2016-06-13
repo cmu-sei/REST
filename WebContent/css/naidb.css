@@ -1,0 +1,58 @@
+
+/* Trigger vertical scroll    */
+/* Hide the horizontal scroll */
+
+tbody {
+    overflow-y: auto;    
+    overflow-x: hidden;  
+}
+    .table {
+        max-width: none;
+//       table-layout: fixed;
+        word-wrap: break-word;
+    }
+.fixed-table-toolbar .dropdown-menu {
+    text-align: left;
+    max-height: none;
+    overflow: auto;
+}
+
+.bar {
+  fill: steelblue;
+}
+.bar:hover {
+  fill: brown;
+}
+.axis {
+  font: 10px sans-serif;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.ared {
+color: red;
+}
+
+
+div.tooltip {   
+  position: absolute;           
+  text-align: center;           
+  width: 60px;                  
+  height: 28px;                 
+  padding: 2px;             
+  font: 12px sans-serif;        
+  background: lightsteelblue;   
+  border: 0px;      
+  border-radius: 8px;           
+  pointer-events: none;         
+}
+.naidb td,th {
+padding-left: 3px; 
+}
+input, button, select, textarea  {
+  border-radius: 5px;
+}
+

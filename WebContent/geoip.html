@@ -1,0 +1,118 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Lookup IP address using leaflet maps</title>
+<link href="css/leaflet.css"  rel="stylesheet" type="text/css" />
+ <!--[if lte IE 8]>
+     <link rel="stylesheet" href="../css/leaflet.ie.css" />
+ <![endif]-->
+ <script src="js/leaflet/leaflet-src.js"></script>
+ <script type="text/javascript" src="js/heatmap/heatmap.js"></script>
+ <script type="text/javascript" src="js/heatmap/heatmap-leaflet.js"></script>
+ <script src="js/jquery/jquery-1.8.0.min.js"></script>
+<script src="js/jscripts2.js"></script>
+<script src="js/ie_helper.js"></script>
+<link rel="stylesheet" href="css/MarkerCluster.css" />
+<link rel="stylesheet" href="css/MarkerCluster.Default.css" />
+<!--[if lte IE 8]><link rel="stylesheet" href="css/MarkerCluster.Default.ie.css" /><![endif
+]-->
+<script src="js/leaflet/leaflet.markercluster-src.js"></script>
+
+<style><!--
+BODY {
+ margin: 5px 0px 0px 7px;
+  background-color : #FFFFFF;
+}
+BODY,TABLE {  color : #000000;
+  font-size: 9pt;
+  font-family:  Verdana, Arial, Helvetica, Tahoma, sans-serif;
+  line-spacing: .5em;
+}
+div.zoomclass { display:none; position:absolute; width: 99%; height: 99%; border-style: solid; background-color: #FFFFFF; padding: 5px; z-index: 5; text-align: center; }
+
+//--></style>
+</head>
+<body>
+
+<table width="100%"><tr>
+<th colspan="3">IP address to Geoip using open source Geocity database</th></tr>
+<tr>
+<td>
+
+    <input id="ip" name="ip" type="text" /><br />
+    <button onclick="addIPMarker($('#ip').val(),false,true);">Add Single IP</button>
+</td><td>
+<textarea id="ips" name="ips"></textarea><br />
+<input type="checkbox" name="tracepath" id="tracepath" value="1" />Trace Path<br />
+<button onclick="addIPArray($('#ips').val().split('\n'),'Marker');">Add multiple IPs</button>
+<button onclick="addIPArray($('#ips').val().split('\n'),'HeatMap');">HeatMap</button></td><td>
+</td></tr>
+<tr><td colspan='3'>
+GeoIP data source: <select name='datasource' onchange='update_datasource(this.options[this.selectedIndex].value)'>
+<option value='geoipsearch'>Default -MaxMind</option>
+<option value='quovasearch'>Quova</option>
+</select>
+
+<div style="position: relative;">
+<div id="upload_process" style="position:absolute; visibility: hidden">
+<img src="loading1.gif" width="20" />
+</div>
+<div id="progress_bar" style="position:absolute; visibility: hidden;">
+Step: <!-- <input type="text" name="progress" id="progress" value="" size="8" style="border: 0; 
+background: #F1F1F1" />-->
+</div>
+</div>
+</td></tr>
+</table>
+<p />
+<p />
+DEBUG Window: 
+   <button onclick="toggleView('debug'); return false;">Toggle</button> :<br />
+<div id='debug' style='display:none'>
+<br />
+ <iframe name="submit-iframe" id='debugger' style="width:100%;height:30px;border:0px solid #fff;">
+</iframe>
+</div>
+
+<table><tr><td>
+    <div id="map" style="height: 600px; width: 800px;"></div></td><td>
+<div style="height: 120px; margin: 0px 0 0 0px; " style="background: #000000;" id="barIndex">
+</div>
+</td></tr>
+</table>
+
+
+<hr />
+
+<script>
+var map = L.map('map').setView([50,0], 4);
+baseLayer= L.tileLayer('https://www.cdc.mil/maps/{z}/{x}/{y}.png', {
+//baseLayer= L.tileLayer('http://lab162.teal.cert.org/cdc/world-blue/{z}/{x}/{y}.png', {	
+  attribution: 'Map data &copy;',
+		maxZoom: 8
+		}).addTo(map);
+//var marker = L.marker([51.5, -0.09]).addTo(map);
+//marker.bindPopup("<b>Hello </b><br /> You are here!");
+//.openPopup();
+
+if(self.opener) {
+	if(self.opener.ipArray)
+		addIPArray(self.opener.ipArray,self.opener.markertype);
+	}
+
+
+</script>
+Select Map Terrain:
+<select onchange="baseLayer.setUrl(this.options[this.selectedIndex].value+'/{z}/{x}/{y}.png')">
+<option value="../maps/">Default</option>
+<option value="../maps/world-blue/">World Blue</option>
+<option value="http://lab162.teal.cert.org/cdc/world-blue/">DISA (Lab Cert)</option>
+<option value="/tools/world-blue">World (Blue)</option>
+<option value="/tools/roadtrip">RoadTrip (USA)</option>
+<option value="/tools/geography-class">Geography Class</option>
+<option value="/tools/control-room">Control Room</option>
+</select>
+
+</body>
+</html> 

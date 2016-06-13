@@ -1,0 +1,160 @@
+<!DOCTYPE html lang="en-US">
+<head>
+<script type="text/javascript" src="js/jquery/jquery-1.8.0.min.js"></script> 
+<script type="text/javascript" src="js/jsonTable/jquery.tablesorter.js"></script> 
+<script type="text/javascript" src="js/jsonTable/jquery.tablesorter.pager.js"></script> 
+<script type="text/javascript" src="js/datepickr.min.js"></script> 
+<script type="text/javascript" src="js/iptools.js"></script> 
+<script src="js/ie_helper.js"></script>
+<link rel="stylesheet" href="css/tablesorter.css" />
+</head>
+<body>
+<form>
+<table><caption>NAIDB Criterea</caption>
+<tr><td>
+Search for 
+<select name="querytype" id="querytype" onchange="if(this.selectedIndex < 1) { document.getElementById('searchme').value='';document.getElementById('searchme').onfocus=function(){this.blur();}} else { document.getElementById('searchme').value=''; document.getElementById('searchme').onfocus=null}">
+<option value='datesearch'>Date Search</option>
+<option value='namesearch'>Name Search</option>
+<option value='familysearch'>Name Search (family)</option>
+<option value='ipsearch'>IP Search</option>
+<option value='hashsearch'>Hash Search</option>
+<option value='domainsearch'>Domain Search</option>
+</select>
+</td>
+<td>
+<input id="searchme" name="searchme" size="25" value="" onfocus="this.blur()"/>
+</td>
+</tr>
+<tr><td>
+IP Block size
+</td>
+<td><input id='ipblocksize' name='ipblocksize' value='65535'/>
+</td></tr>
+<tr><td>
+Include DOD Network? </td><td><select id='goodguy' name='goodguy'><option value='0'>Non DoD</option><option value='1'>Include DoD</option></select>
+</td></tr>
+
+<tr><td>
+                Start:</td><td>
+                <input id="start" size="20" value="1 January 2000" /></td></tr>
+                <tr><td>
+                End:</td><td>
+                <input id="end" size="20" />
+
+</td></tr>
+<tr><td colspan='2'>
+<input type='button' name='submit' value='Search' onclick='psearch()' />
+<br />
+Show in Geo Map:<select id="changecolumn" name="changecolumn" onchange="defaultcolumn=this.options[this.selectedIndex].value">
+<option value="IP4_STARTS">Starting IPv4 Address</option>
+<option value="IP4_ENDS">Ending IPv4 Address</option>
+</select>
+<input type='button' name='heatmap' value='Map Plot' onclick='openmap(defaultcolumn,"Marker")' />
+<input type='button' name='heatmap' value='Heatmap Plot' onclick='openmap(defaultcolumn,"HeatMap")' />
+</td></tr>
+</table>
+</form>
+<div id="loading"></div>
+<div id="dTable">
+<table id="myTable" class="tablesorter"> 
+<thead id="thead"> 
+</thead> 
+<tbody id="tbody"> 
+</tbody> 
+</table> 
+</div>
+<div id="pager" class="pager">
+  <form>
+    <a href="#" class="first">First</a>
+    <a href="#" class="prev">Last</a>
+    Page:<input type="text" class="pagedisplay" size="5"  onfocus="this.blur()"/>
+    <a href="#" class="next">Next</a>
+    <a href="#" class="last">Last</a>
+Per Page:    <select class="pagesize">
+      <option selected="selected"  value="10">10</option>
+      <option value="20">20</option>
+      <option value="30">30</option>
+      <option  value="40">40</option>
+      </select>
+    </form>
+</div>
+<script>
+function uTable(url) {
+	$("#myTable tr").remove()
+	 $.getJSON(url, function(flat) { 
+		 if(flat['error']) {
+			 alert("Query Error: "+flat.error)
+			 $("#loading").html("")
+			 return;	 
+			 
+		 }
+		 currentdata=flat.gdata
+		 if(flat.gdata.length < 1) {
+			 alert('No data returned')
+			 $("#loading").html("")
+			 return;
+		 }
+		 h = document.getElementById("thead").insertRow(0);
+		 for(var i=0;i<flat.gdata.length;i++) {
+		  var obj=flat.gdata[i]
+		 r = document.getElementById("tbody").insertRow(i);
+		 var k=0;
+		  for(var key in obj) {
+		   //console.log(key+":"+obj[key]+":"+k);
+		 if (i==0) {
+		      th=document.createElement('th');
+		      th.innerHTML=key
+		      h.appendChild(th);
+		 }
+		 r.insertCell(k).innerHTML = obj[key]
+		 k++;
+		 }				    
+		 }
+
+		         $("#myTable").tablesorter(); 
+		         $("#myTable").tablesorterPager({container: $("#pager"), positionFixed: false, size:10});
+		         $("#loading").html("")
+		 })	
+		
+}
+
+//flat={"gdata":[{"ip":"204.11.35.97","region_code":"MI","metrocode":"505","areacode":"248","postal_code":"48083","city":"Troy","latitude":"42.556","longitude":"-83.1178","country_code":"US"},{"ip":"204.11.35.99","region_code":"MI","metrocode":"508","areacode":"248","postal_code":"48083","city":"Troy","latitude":"42.556","longitude":"-83.1178","country_code":"UK"}]}
+url="DBCon?jndisource=jdbc/geoip&querytype=geoipsearch&ip=204.11.35.97&ip=208.86.299.31&out_type=jquery&78.187.157.135&ip=74.143.197.54&ip=27.130.130.40&ip=75.192.147.200&ip=68.34.146.13&ip=76.5.190.5&ip=173.17.63.90&ip=101.99.29.134&ip=65.32.49.130&ip=86.183.188.24&ip=208.97.34.1&ip=98.213.225.108&ip=175.214.49.115&ip=2.184.47.128&ip=196.216.57.2&ip=69.204.205.242&ip=86.163.84.42&ip=122.172.249.1&ip=71.75.238.29&ip=122.176.46.150&ip=98.27.246.227&ip=97.95.94.125&ip=70.239.177.103&ip=207.63.57.114&ip=50.158.118.165&ip=197.33.68.70&ip=176.44.190.2&ip=69.127.185.147&ip=68.204.60.44&ip=24.28.81.222&ip=14.96.156.210&ip=70.115.176.19&ip=77.69.174.246&callback=?"
+var baseurl="DBCon?jndisource=jdbc/naidb&out_type=jquery&callback=?&"
+//		uTable(url);
+new datepickr('start',{'dateFormat': 'd F Y'});
+fend=new datepickr('end',{'dateFormat': 'd F Y'});
+var now=new Date();
+$('#end').val(now.getDate()+' '+fend.currentMonth.innerHTML)
+var currentdata=[];
+function psearch() {
+	var start=new Date($('#start').val())
+	var end=new Date($('#end').val())
+	var mstart=start.getFullYear()*10000+(start.getMonth()+1)*100+start.getDate()
+	var mend=end.getFullYear()*10000+(end.getMonth()+1)*100+end.getDate()	
+	url= baseurl+'querytype='+$('#querytype').val()+'&ipblocksize='+$('#ipblocksize').val()+'&'+$('#querytype').val()+'='+$('#searchme').val()+'&start='+mstart+'&end='+mend+'&goodguy='+$('#goodguy').val()
+	//console.log(url)
+	 $("#loading").html("<img src='loading1.gif' width='20'/>")
+	uTable(url);
+}
+</script>
+
+<script>
+var ipArray=[];
+var markertype='Marker'
+var defaultcolumn='IP4_STARTS'
+function openmap(column,type) {
+	ipArray=[]
+	if(currentdata.length < 1) return;
+	for(var i=0;i<currentdata.length;i++) {
+		if(currentdata[i][column] && validip(currentdata[i][column]))
+		ipArray.push(currentdata[i][column])
+	}
+	//w2.addIPArray(ipArray,'HeatMap');
+	//ipArray=["208.86.233.11","209.23.11.19","133.4.11.1"]
+	markertype=type
+	var w2=window.open("geoip.html");
+}
+</script>
+</body>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context>
+    <!-- Specify a JDBC datasource -->
+    <Resource name="jdbc/joracle" auth="Container"
+        type="javax.sql.DataSource" username="jdbc" password="jdbcPa$$word"
+        driverClassName="oracle.jdbc.driver.OracleDriver"
+        url="jdbc:oracle:thin:@centos:1521:XE"
+        maxActive="10" maxIdle="4" />
+        <!-- Simple in memory database for testing -->
+     <Resource name="jdbc/simple" auth="Container"
+        type="javax.sql.DataSource" username="jdbc" password="jdbcPa$$word"
+        driverClassName="org.hsqldb.jdbc.JDBCDriver"
+        url="jdbc:hsqldb:mem:mymemdb"
+        maxActive="10" maxIdle="4" />
+</Context>

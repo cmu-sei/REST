@@ -1,0 +1,3 @@
+Manifest-Version: 1.4.1a
+Class-Path: 
+Release: 20160602

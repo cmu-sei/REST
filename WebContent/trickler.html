@@ -1,0 +1,314 @@
+
+<!DOCTYPE html lang="en-US">
+<head>
+<script type="text/javascript" src="js/jquery/jquery-1.8.0.min.js"></script> 
+<script type="text/javascript" src="js/jsonTable/jquery.tablesorter.js"></script> 
+<script type="text/javascript" src="js/jsonTable/jquery.tablesorter.pager.js"></script> 
+<script type="text/javascript" src="js/datepickr.min.js"></script> 
+<script type="text/javascript" src="js/iptools.js"></script> 
+<script src="js/ie_helper.js"></script>
+<link rel="stylesheet" href="css/tablesorter.css" />
+</head>
+<body>
+<form>
+<table><caption>Trickler Criterea</caption>
+<tr><td>
+Search for 
+<select name="querytype" id="querytype" onchange="display_types(this)">
+<option value="d">Date search</option>
+<option value="n">DNS name search</option>
+<option value="dnsip">IP /IP subnet search</option>
+<option value="type">DNS type search</option>
+<option value="v">DNS value search</option>
+<option value="cname">CNAME trail</option>
+</select>
+</td>
+<td>
+<input id="searchme" name="searchme" size="25" value="" onfocus="this.blur()"/>
+<input type="hidden" id="wildcard" value="" />
+<div id="wildcarder"  style="display:none; font-size: 0.7em" >
+<input type="checkbox" name="wcarde" onclick="if(this.checked)$('#wildcard').val('w'); else $('#wildcard').val('');" /> Wildcard?
+</div>
+
+<div id='helpsearch' style='display:none; font-size: 0.6em;'>
+<select id='limitsearch' onchange="$('#searchme').val($('#limitsearch').val())">
+<option value='1'>A</option>
+ <option value='2'>NS</option>
+ <option value='5'>CNAME</option>
+ <option value='6'>SOA</option>
+ <option value='12'>PTR</option>
+ <option value='15'>MX</option>
+ <option value='16'>TXT</option>
+ <option value='17'>RP</option>
+ <option value='18'>AFSDB</option>
+ <option value='24'>SIG</option>
+ <option value='25'>KEY</option>
+ <option value='28'>AAAA</option>
+ <option value='29'>LOC</option>
+ <option value='33'>SRV</option>
+ <option value='35'>NAPTR</option>
+ <option value='36'>KX</option>
+ <option value='37'>CERT</option>
+ <option value='39'>DNAME</option>
+ <option value='42'>APL</option>
+ <option value='43'>DS</option>
+ <option value='44'>SSHFP</option>
+ <option value='45'>IPSECKEY</option>
+ <option value='46'>RRSIG</option>
+ <option value='47'>NSEC</option>
+ <option value='48'>DNSKEY</option>
+ <option value='49'>DHCID</option>
+ <option value='50'>NSEC3</option>
+ <option value='51'>NSEC3PARAM</option>
+ <option value='52'>TLSA</option>
+ <option value='55'>HIP</option>
+ <option value='99'>SPF</option>
+ <option value='249'>TKEY</option>
+ <option value='250'>TSIG</option>
+ <option value='32768'>TA</option>
+ <option value='32769'>DLV</option>
+</select>
+</div>
+</td>
+</tr>
+<tr><td>
+                Start:</td><td>
+                <input id="start" size="20" value="1 Jan 2000" /> <div id='istart' style='display:inline;font-size: 0.5em'></div></td></tr>
+                <tr><td>
+                End:</td><td>
+                <input id="end" size="20" />
+<div id='iend' style='display:inline;font-size: 0.5em'></div>
+</td></tr>
+<tr><td colspan='2'>
+<input type='button' name='submit' value='Search' onclick='psearch(0)' /> <br />
+
+Raw table search ? <input type='checkbox' id='raw' value='raw' /><br />
+Total number of rows: <input type='text' id='Next' value='0' onfocus='this.blur()' size='10'/>
+(Max rows returned per page is 1000)
+
+<br />
+<div class='multipage' style='display:none;'>
+Page Navigation<br />
+<a href='#' onclick='psearch(0);'>First</a>
+<a href='#' onclick='psearch(fstart-maxreturn);'>Prev</a>
+<input type='text' value='' size='20' onfocus='this.blur()' id='viewing' />
+<a href='#' onclick='psearch(fstart+maxreturn);'>Next</a>
+</div>
+<!--
+<input type='button' name='heatmap' value='Map Plot (IP4_START)' onclick='openmap("IP4_STARTS","Marker")' />
+<input type='button' name='heatmap' value='Heatmap Plot(IP4_START)' onclick='openmap("IP4_STARTS","HeatMap")' />
+-->
+</td></tr>
+</table>
+</form>
+<div id="loading"></div>
+<div id="dTable" style='border: thin solid black'>
+<table id="myTable" class="tablesorter"> 
+<thead id="thead"> 
+</thead> 
+<tbody id="tbody"> 
+</tbody> 
+</table> 
+<div id="pager" class="pager" style="position:relative; top: 9px; font-size: 0.7em;">
+<small>Table Navigation</small>
+
+  <form>
+    <a href="#" class="first">First</a>
+    <a href="#" class="prev">Prev</a>
+    Page:<input type="text" id="pagedisplay" class="pagedisplay" size="10"  onfocus="this.blur()"/>
+    <a href="#" class="next">Next</a>
+    <a href="#" class="last">Last</a>
+Per Page:    <select class="pagesize" id="pagesize">
+      <option selected="selected"  value="10">10</option>
+      <option value="20">20</option>
+      <option value="30">30</option>
+      <option  value="40">40</option>
+      </select>
+    </form>
+</div>
+</div>
+<div style='display:inline;font-size: 0.7em;' id='urlhelp'></div>
+
+<script>
+function uTable(url) {
+	$("#myTable tr").remove()
+	 $.getJSON(url, function(flat) { 
+		 if(flat['error']) {
+			 alert("Query Error: "+flat.error)
+			 $("#loading").html("")
+			 return;	 
+			 
+		 }
+		 currentdata=flat.gdata
+		 if(flat.gdata.length < 1) {
+			 alert('No data returned')
+			 $("#loading").html("")
+			 return;
+		 }
+		 h = document.getElementById("thead").insertRow(0);
+		 var hobj=flat.gdata[0]
+   	         for(var key in hobj) {
+		     th=document.createElement('th');
+		     th.innerHTML=key
+		     h.appendChild(th);
+		 }
+		 for(var i=0;i<flat.gdata.length;i++) {
+		  var obj=flat.gdata[i]
+		 r = document.getElementById("tbody").insertRow(i);
+		 var k=0;
+		  for(var key in obj) {
+		   //console.log(key+":"+obj[key]+":"+k);
+		 r.insertCell(k).innerHTML = obj[key]
+		 k++;
+		 }				    
+		 }
+
+		         $("#myTable").tablesorter(); 
+		         $("#myTable").tablesorterPager({container: $("#pager"), positionFixed: false, size:10});
+		         $("#loading").html("")
+			mpaginate(flat.gdata.length);
+		 })	
+		
+}
+function mpaginate(length) {
+       var nlength=maxreturn+fstart;
+       if(length>=maxreturn) {
+		      $('#Next').val(nlength+'+')
+		      $('.multipage').show()
+		      $('#viewing').val('Viewing '+fstart+'-'+nlength);
+       }
+       else {
+		      $('#Next').val(length);
+		      $('.multipage').hide()
+	}
+}
+
+
+//flat={"gdata":[{"ip":"204.11.35.97","region_code":"MI","metrocode":"505","areacode":"248","postal_code":"48083","city":"Troy","latitude":"42.556","longitude":"-83.1178","country_code":"US"},{"ip":"204.11.35.99","region_code":"MI","metrocode":"508","areacode":"248","postal_code":"48083","city":"Troy","latitude":"42.556","longitude":"-83.1178","country_code":"UK"}]}
+//url="DBCon?jndisource=jdbc/geoip&querytype=geoipsearch&ip=204.11.35.97&ip=208.86.299.31&out_type=jquery&78.187.157.135&ip=74.143.197.54&ip=27.130.130.40&ip=75.192.147.200&ip=68.34.146.13&ip=76.5.190.5&ip=173.17.63.90&ip=101.99.29.134&ip=65.32.49.130&ip=86.183.188.24&ip=208.97.34.1&ip=98.213.225.108&ip=175.214.49.115&ip=2.184.47.128&ip=196.216.57.2&ip=69.204.205.242&ip=86.163.84.42&ip=122.172.249.1&ip=71.75.238.29&ip=122.176.46.150&ip=98.27.246.227&ip=97.95.94.125&ip=70.239.177.103&ip=207.63.57.114&ip=50.158.118.165&ip=197.33.68.70&ip=176.44.190.2&ip=69.127.185.147&ip=68.204.60.44&ip=24.28.81.222&ip=14.96.156.210&ip=70.115.176.19&ip=77.69.174.246&callback=?"
+//var baseurl="DBCon?jndisource=jdbc/trickler&out_type=jquery&callback=?&"
+var baseurl="DBCon?jndisource=jdbc/trickler&out_type=json&"
+var maxreturn=1000;
+var fstart=0;
+//		uTable(url);
+new datepickr('start',{'dateFormat': 'd F Y'});
+fend=new datepickr('end',{'dateFormat': 'd F Y'});
+var now=new Date();
+$('#end').val(now.getDate()+' '+fend.currentMonth.innerHTML)
+var currentdata=[];
+function psearch(istart) {
+	if(istart < 0) return;
+	var start=new Date($('#start').val())
+	var end=new Date($('#end').val())
+	var mstart=start.getFullYear()*10000+(start.getMonth()+1)*100+start.getDate()
+	var mend=end.getFullYear()*10000+(end.getMonth()+1)*100+end.getDate()	
+        var raw= $('#raw').prop('checked') ? 'raw' : ''
+        var iprange=subnet2range($('#searchme').val());
+//        var istart=parseInt($('#Next').val());
+        var iend=istart+1000;
+        var querytype=$('#querytype').val()+$('#wildcard').val()+raw
+	url= baseurl+'querytype='+querytype+'search&'+querytype+'search='+$('#searchme').val()+'&dstart='+mstart+'000000.00'+'&dend='+mend+'000000.00'+'&istart='+istart+'&iend='+iend+'&ipstart='+iprange[0]+'&ipend='+iprange[1]
+	//console.log(url) 20120101000000.00
+	 $("#loading").html("<img src='loading1.gif' width='20'/>")
+         var loc = location.href.substr(0,location.href.lastIndexOf('/')+1)+url
+         var locxml = loc.replace("=jquery","=xml");
+         $("#urlhelp").html("Rest URL is <a href='"+loc+"' target='_new'>JSON</a> : "+loc+"<br /> and <a href='"+locxml+"' target='_new'>XML</a> : "+locxml);
+	uTable(url);
+//	         console.log(flat.gdata.length);
+	fstart=istart
+}
+
+function ipswap(ip_or_long) {
+//IP and Long integer swapping function
+  if(ip_or_long.indexOf(",") > -1) return range2subnet(ip_or_long.split(","))
+  if(ip_or_long.indexOf("/") > -1) return subnet2range(ip_or_long)
+  var ipa=ip_or_long.split('.');
+  if(ipa.length == 4) return ip2long(ip_or_long)
+  else return long2ip(ip_or_long);
+}
+function range2subnet(range) {
+  var diff=range[1]-range[0]+1;
+  var sub=32-Math.log(diff)/Math.LN2
+  return long2ip(range[0])+"/"+sub
+}
+function subnet2range(subnet) {
+ var arr=subnet.split("/");
+ var ip=arr[0]
+ var sub=32;
+ if(arr.length == 2)  {
+    var match = arr[1].match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if((match) && (match.length == 5)) 
+         sub=32-Math.log(ip2long('255.255.255.255')-ip2long(arr[1])+1)/Math.LN2
+    else if (parseInt(arr[1]))
+         sub=parseInt(arr[1])
+ }
+ sub=32-sub;
+ return [((ip2long(ip) >>> (sub))*Math.pow(2,sub)),((ip2long(ip) >>> (sub))*Math.pow(2,sub)+Math.pow(2,sub)-1)]
+}
+
+function long2ip(long) {
+  if(long < 1) return '';
+  return [long >>> 24, long >>> 16 & 0xFF, long >>> 8 & 0xFF, long & 0xFF].join('.');
+}
+function ip2long(ip) {
+     var ipa=ip.split('.').reverse();
+     var long=0;
+     for(var i=0;i<ipa.length;i++) long=long+ipa[i]*Math.pow(2,i*8)
+     return long;
+}
+
+</script>
+
+<script>
+var ipArray=[];
+var markertype='Marker'
+function openmap(column,type) {
+	if(currentdata.length < 1) return;
+	for(var i=0;i<currentdata.length;i++) {
+		if(currentdata[column] && validip(currentdata[column]))
+		ipArray.push(currentdata[column])
+	}
+	//w2.addIPArray(ipArray,'HeatMap');
+	//ipArray=["208.86.233.11","209.23.11.19","133.4.11.1"]
+	markertype=type
+	var w2=window.open("geoip.html");
+}
+$(document).ready(function() {
+  // initialization code goes here
+	 $.getJSON(baseurl+'querytype=drange&true=9', function(flat) { 
+		 if(flat['error']) {
+			 alert("Query Error: "+flat.error)
+			 return;	 
+			 
+		 } 
+//		alert(flat.gdata[0]['FIRST_DATE']);
+		$('#istart').html(flat.gdata[0]['FIRST_DATE'])
+		$('#iend').html(flat.gdata[0]['LAST_DATE'])
+		})
+});
+function display_types(which) {
+	var mvalue=which.options[which.selectedIndex].value
+        if(which.selectedIndex < 1) { 
+		 document.getElementById('searchme').value='';
+		 document.getElementById('searchme').onfocus=function(){this.blur();}
+	} 
+	else { 
+		 document.getElementById('searchme').value=''; 
+		document.getElementById('searchme').onfocus=null
+	}; 
+			 $('#searchme').show();
+			 $('#wildcarder').hide();
+			$('#helpsearch').hide();
+	if(mvalue == 'type') { 
+			$('#helpsearch').show();
+			document.getElementById('searchme').value=1;
+			 $('#searchme').hide();
+	}
+	if(mvalue == 'n') $('#wildcarder').show();
+	if(mvalue == 'v') $('#wildcarder').show();
+}
+
+</script>
+
+
+</body>

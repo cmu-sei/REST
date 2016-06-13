@@ -1,0 +1,63 @@
+<!DOCTYPE html lang="en-US">
+<head>
+<script type="text/javascript" src="js/jquery/jquery-1.8.0.min.js"></script> 
+<script type="text/javascript" src="js/jsonTable/jquery.tablesorter.js"></script> 
+<script type="text/javascript" src="js/jsonTable/jquery.tablesorter.pager.js"></script> 
+<script src="js/ie_helper.js"></script>
+<link rel="stylesheet" href="css/tablesorter.css" />
+</head>
+<body>
+<table id="myTable" class="tablesorter"> 
+<thead id="thead"> 
+</thead> 
+<tbody id="tbody"> 
+</tbody> 
+</table> 
+<div id="pager" class="pager">
+  <form>
+    <a href="#" class="first">First</a>
+    <a href="#" class="prev">Last</a>
+    Page:<input type="text" class="pagedisplay" size="5"  onfocus="this.blur()"/>
+    <a href="#" class="next">Next</a>
+    <a href="#" class="last">Last</a>
+Per Page:    <select class="pagesize">
+      <option selected="selected"  value="10">10</option>
+      <option value="20">20</option>
+      <option value="30">30</option>
+      <option  value="40">40</option>
+      </select>
+    </form>
+</div>
+<script>
+function uTable(url) {
+	$("#myTable tr").remove()
+	 $.getJSON(url, function(flat) { 
+		 h = document.getElementById("thead").insertRow(0);
+		 for(var i=0;i<flat.gdata.length;i++) {
+		  var obj=flat.gdata[i]
+		 r = document.getElementById("tbody").insertRow(i);
+		 var k=0;
+		  for(var key in obj) {
+		   //console.log(key+":"+obj[key]+":"+k);
+		 if (i==0) {
+		      th=document.createElement('th');
+		      th.innerHTML=key
+		      h.appendChild(th);
+		 }
+		 r.insertCell(k).innerHTML = obj[key]
+		 k++;
+		 }				    
+		 }
+
+		         $("#myTable").tablesorter(); 
+		         $("#myTable").tablesorterPager({container: $("#pager")});
+		 })	
+}
+
+//flat={"gdata":[{"ip":"204.11.35.97","region_code":"MI","metrocode":"505","areacode":"248","postal_code":"48083","city":"Troy","latitude":"42.556","longitude":"-83.1178","country_code":"US"},{"ip":"204.11.35.99","region_code":"MI","metrocode":"508","areacode":"248","postal_code":"48083","city":"Troy","latitude":"42.556","longitude":"-83.1178","country_code":"UK"}]}
+url="DBCon?jndisource=jdbc/geoip&querytype=geoipsearch&ip=204.11.35.97&ip=208.86.299.31&out_type=jquery&78.187.157.135&ip=74.143.197.54&ip=27.130.130.40&ip=75.192.147.200&ip=68.34.146.13&ip=76.5.190.5&ip=173.17.63.90&ip=101.99.29.134&ip=65.32.49.130&ip=86.183.188.24&ip=208.97.34.1&ip=98.213.225.108&ip=175.214.49.115&ip=2.184.47.128&ip=196.216.57.2&ip=69.204.205.242&ip=86.163.84.42&ip=122.172.249.1&ip=71.75.238.29&ip=122.176.46.150&ip=98.27.246.227&ip=97.95.94.125&ip=70.239.177.103&ip=207.63.57.114&ip=50.158.118.165&ip=197.33.68.70&ip=176.44.190.2&ip=69.127.185.147&ip=68.204.60.44&ip=24.28.81.222&ip=14.96.156.210&ip=70.115.176.19&ip=77.69.174.246&callback=?"
+uTable(url);
+   
+</script>
+
+</body>
