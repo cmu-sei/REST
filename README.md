@@ -1,4 +1,4 @@
-# Rest
+# REST
 Data webservices API software called REST is a simple J2EE based application that is designed to connect to legacy databases (RDBMS) and expose the output data via webservices.  REST software is designed to simplify integration of several RDBMS datasources to a cloud friendly webservices layer.  
 
 You can manage the queries by changing the "query.properties" file either in the META-INF folder or in the /etc/Rest/ folder.  The DBCon class will search for /etc/Rest/query.properties file and then fall back to the default local properties file. There is a local example file in META-INF context.
