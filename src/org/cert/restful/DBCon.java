@@ -317,14 +317,19 @@ public class DBCon extends HttpServlet {
         //System.out.println("Return type requested "+return_type);
         if (return_type.equals("jquery")) {
         	// Print jquery using callback
-        	resp.setContentType("text/javascript");
+        	resp.setContentType("application/javascript");
         	out.println(jQuery+"("+rdata+");");
         }	
         else if (return_type.equals("xml")) {
         	resp.setContentType("text/xml");
         	out.println(new XMLSerializer().write(rdata));
         }
-        else // If it is null or anything else assume JSON
+        else if (return_type.equals("json")) {
+        	resp.setContentType("application/json");
+            out.println(rdata);
+        } else {
+        	//If out_type variable is not requested then just send not content-type: header
         	out.println(rdata);
+        }
     }
 }

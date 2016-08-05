@@ -10,3 +10,11 @@ The system library files for JDBC connections are preferably part of your JVM bo
 For JSON use: http://localhost:8080/Rest/DBCon?jndisource=jdbc/simple&querytype=hsqltest&true=1&out_type=json
 for XML use: http://localhost:8080/Rest/DBCon?jndisource=jdbc/simple&querytype=hsqltest&true=1&out_type=xml
 
+for HTML table view visit
+http://localhost:8080/bootstrap_table.html?jndisource=jdbc/simple&querytype=hsqltest&true=1&out_type=json
+
+simple json_table is
+http://localhost:8080/json_table.html?jndisource=jdbc/simple&querytype=hsqltest&true=1&out_type=json
+
+VERSION: 1.4.9
+RELEASE: 20160804

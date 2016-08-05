@@ -12,10 +12,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 //External libs
 import net.sf.json.*;
-import net.sf.json.xml.XMLSerializer;
 //Out libs
 import org.cert.utils.PropertiesLoader;
 /*
@@ -131,7 +129,7 @@ DM-0003716
 @WebServlet("/DBList")
 
 public class DBList extends HttpServlet {
-
+	private static final long serialVersionUID = 1L;
     public DBList() {
         super();
         // TODO Auto-generated constructor stub
@@ -140,7 +138,7 @@ public class DBList extends HttpServlet {
         try {
             // Get DataSource
             Context initContext  = new InitialContext();
-
+            System.out.print(initContext.toString());
             
 
         } catch (NamingException e) {
@@ -163,7 +161,7 @@ public class DBList extends HttpServlet {
     	resp.setDateHeader("Expires", System.currentTimeMillis() + 1800000L);
         //System.out.println("Return type requested "+return_type);
     	// Print jquery using callback
-    	resp.setContentType("text/javascript");
+    	resp.setContentType("application/json");
     	
     	JSONArray jarray = new JSONArray();
     	for (Object k:myprop.keySet()) {
