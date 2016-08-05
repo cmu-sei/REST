@@ -1,0 +1,180 @@
+<!DOCTYPE html lang="en-US">
+<head>
+<script type="text/javascript" src="js/jquery/jquery.min.js"></script> 
+<script type="text/javascript" src="js/jsonTable/jquery.tablesorter.js"></script> 
+<script type="text/javascript" src="js/jsonTable/jquery.tablesorter.pager.js"></script> 
+<script type="text/javascript" src="js/datepickr.min.js"></script> 
+<script type="text/javascript" src="js/iptools.js"></script> 
+<script src="js/ie_helper.js"></script>
+<script src="js/d3/d3.min.js"></script>
+<script src="js/bootstrap/bootstrap.min.js"></script>
+<script src="js/bootstrap/bootstrap-table.js"></script>
+<link rel="stylesheet" href="css/tablesorter.css" />
+<link rel="stylesheet" href="css/bootstrap.min.css">
+<link rel="stylesheet" href="css/bootstrap-table.css">
+<link rel="stylesheet" href="css/trickler.css">
+<style>
+.trickler {
+ padding-left: 10px;
+ border-collapse: separate;
+}
+.querytype { display: block;}
+.searchme { display: block;} 
+.table-striped {
+    max-width: 100%;
+    table-layout: fixed;
+    word-wrap: break-word;
+}
+.table-striped tr td:last-child{
+    width:100%;
+    white-space:nowrap;
+}
+</style>
+<script>
+function add_conditions() {
+y=$("#searcher tr").html()
+$("#searcher").append("<tr>"+y+"</tr>")
+}
+var helpers={'nsearch': "DNS request e.g., google.com",'ipsearch':"IP or subnet 193.11.12.0/24",'typesearch':"Query type e.g., CNAME or A",'vsearch':"DNS response vaue e.g., mx.google.com or 123.11.19.1"}
+function buildselector(w) {
+   var m=$(w).parent().next().find('input')
+   var v=w.options[w.selectedIndex].value
+   m.attr('placeholder',helpers[v] || "")
+}
+</script>
+
+</head>
+<body>
+
+
+<table id="table-javascript"></table>
+
+<div style='display:inline;font-size: 0.7em;' id='urlhelp'></div>
+
+<script>
+var columnx;
+function uTable(url) {
+	$("#myTable tr").remove()
+	 $.getJSON(url, function(flat) { 
+		 if(flat['error']) {
+			 alert("Query Error: "+flat.error)
+			 $("#loading").html("")
+			 return;	 
+			 
+		 }
+                mpaginate(fstart+flat.gdata.length + 1);
+		 currentdata=flat.gdata
+		 if(flat.gdata.length < 1) {
+			 alert('No data returned')
+			 $("#loading").html("")
+			 return;
+		 }
+		 columnx=[{field: 'state',checkbox: true }]
+		 //, {field: 'RN', visible: false},{field: 'IDROW', visible: false}]
+		 var def={} // Invisible columns are none.
+		 for (var k in flat.gdata[0]) {
+				if(def[k] === undefined)
+				 columnx.push({field: k,title: k, sortable:true, visible: true})
+		 }
+
+         $('#table-javascript').bootstrapTable({
+             method: 'get',
+	        data: flat.gdata,
+             cache: false,
+             striped: true,
+             pagination: true,
+             pageSize: 50,
+             pageList: [10, 25, 50, 100, 200],
+             search: true,
+             showColumns: true,
+             showRefresh: true,
+             minimumCountColumns: 2,
+             clickToSelect: true,
+             columns: columnx,
+         });
+			$('#table-javascript').bootstrapTable('load',flat.gdata)
+		 	$("#loading").html("")
+		 })	
+}
+
+var qstring=location.href.split('?');
+if (qstring.length != 2) { 
+	alert("Error query string was not specified")
+} else {
+//var url="DBCon?jndisource=jdbc/geoip&querytype=geoipsearch&ip=204.11.35.97&ip=208.86.299.31&out_type=jquery&78.187.157.135&ip=74.143.197.54&ip=27.130.130.40&ip=75.192.147.200&ip=68.34.146.13&ip=76.5.190.5&ip=173.17.63.90&ip=101.99.29.134&ip=65.32.49.130&ip=86.183.188.24&ip=208.97.34.1&ip=98.213.225.108&ip=175.214.49.115&ip=2.184.47.128&ip=196.216.57.2&ip=69.204.205.242&ip=86.163.84.42&ip=122.172.249.1&ip=71.75.238.29&ip=122.176.46.150&ip=98.27.246.227&ip=97.95.94.125&ip=70.239.177.103&ip=207.63.57.114&ip=50.158.118.165&ip=197.33.68.70&ip=176.44.190.2&ip=69.127.185.147&ip=68.204.60.44&ip=24.28.81.222&ip=14.96.156.210&ip=70.115.176.19&ip=77.69.174.246&callback=?"
+	var url="DBCon?"+qstring[1]
+	uTable(url);
+}
+var currentdata=[];
+var maxreturn=1000;
+var fstart=0
+function psearch(istart) {
+        if(istart < 0) return;
+        var iend=istart+maxreturn;
+	var start=new Date($('#start').val())
+	var end=new Date($('#end').val())
+	var mstart=start.getFullYear()*10000+(start.getMonth()+1)*100+start.getDate()
+	var mend=end.getFullYear()*10000+(end.getMonth()+1)*100+end.getDate()
+	// Escape the values in the full text search string and also allow for wild cards to be changed to SQL language.
+	allopts=$(".querytype")
+        var mopts='&dstart='+mstart+'000000.00'+'&dend='+mend+'000000.00'
+        var checkopts={}
+	for (var j=0;j<allopts.length;j++) {
+	     var w=allopts[j]
+             var m=$(w).parent().next().find('input')
+	     var column=$(w).val()
+             var value=$(m).val()
+	     if(column == "") continue; // Datesearch nothing to add here
+	     if(value == "") continue; // value is nothing so ignore it.
+	     if(column == 'ipsearch') { 
+			column="ipstart"; 
+			var ips=subnet2range(value);
+                        mopts+="&ipstart="+escape(ips[0])+"&ipend="+escape(ips[1])
+	     } else {
+		 mopts+="&"+escape(column)+"="+escape(value)
+	     }
+	     checkopts[column] == 1
+	}
+	for (var col in helpers) {
+		if(checkopts[col] != 1) 
+                   mopts+="&"+col+"=*" // make wildcard search
+        }
+	if (checkopts['ipstart'] != 1) 
+		   mopts+="&ipstart=0&ipend=0"
+ 	url= baseurl+mopts+"&istart="+istart+"&iend="+iend
+//'querytype='+$('#querytype').val()+'&ipblocksize='+$('#ipblocksize').val()+'&'+$('#querytype').val()+'='+spvalue+'&start='+mstart+'&end='+mend+'&goodguy='+$('#goodguy').val()
+	//console.log(url)
+	$("#loading").html("<img src='loading1.gif' width='20'/>")
+	var loc = location.protocol+"//"+location.host+'/'+url
+	loc= location.href.substr(0,location.href.lastIndexOf('/')+1)+url
+	var locxml = loc.replace("=jquery","=xml");
+	$("#urlhelp").html("Rest URL is <a href='"+loc+"' target='_new'>JSON</a> : "+loc+"<br /> and <a href='"+locxml+"' target='_new'>XML</a> : "+locxml);
+	fstart=istart;
+	uTable(url);
+}
+function mpaginate(length) {
+    console.log("Mpaginate length is "+length)
+    var nlength = maxreturn + fstart;
+    if (length >= maxreturn) {
+        $('#Next').val(nlength + '+')
+        $('#multipage').show()
+        $('#viewing').val('Viewing ' + fstart + '-' + nlength);
+        $('#NextPage').show()
+    }
+    else {
+        $('#Next').val(length);
+        $('#NextPage').hide()
+    }
+    if (fstart < 1) {
+        $("#PrevPage").hide()
+        $("#FirstPage").hide()
+    } else {
+         $("#PrevPage").show()
+        $("#FirstPage").show()
+    }
+
+}
+
+
+</script>
+</body>
